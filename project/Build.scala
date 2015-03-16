@@ -44,48 +44,58 @@ object ApplicationBuild extends Build {
       deps.map(_.exclude(group, artifactId))
   }
 
-  
-  val sparkVersion = "1.0.0"
+  val sparkVersion = "1.3.0"
 
   val appDependencies = Seq(ws,
 
     // GUI
-    "org.webjars" %% "webjars-play" % "2.3.0" withSources (),
+    "org.webjars" %% "webjars-play" % "2.3.0-2",
     "org.webjars" % "angularjs" % "1.2.23",
     "org.webjars" % "bootstrap" % "3.2.0",
     "org.webjars" % "angular-ui-bootstrap" % "0.12.0",
-    
+
     // Spark and Spark Streaming
     "org.apache.spark" %% "spark-core" % sparkVersion,
     "org.apache.spark" %% "spark-streaming" % sparkVersion,
     "org.apache.spark" %% "spark-streaming-kafka" % sparkVersion,
-    
+
     // Kafka
     "org.apache.kafka" %% "kafka" % "0.8.2.0",
-    
+
     // Algebird (used here for HyperLogLog)
     "com.twitter" %% "algebird-core" % "0.6.0",
-    
-    // for serialization of case class
-    "com.novus" %% "salat" % "1.9.8",
-    
+
     // MongoDB
-    "org.reactivemongo" %% "reactivemongo" % "0.10.0",
-    
+    "org.reactivemongo" %% "reactivemongo" % "0.10.5.0.akka23",
+
     // Joda dates for Scala
     "com.github.nscala-time" %% "nscala-time" % "1.2.0",
-    
+
     // testing
     "org.scalatestplus" %% "play" % "1.1.0" % "test",
-    "com.novocode" % "junit-interface" % "0.11" % "test"//
+    "com.novocode" % "junit-interface" % "0.11" % "test" //
     )
+
+  val exclusions =
+    <dependencies>
+			<exclude org="javax.jms" module="jms" />
+			<exclude org="com.sun.jdmk" module="jmxtools" />
+			<exclude org="com.sun.jmx" module="jmxri" />
+			<exclude module="sif4j-jdk14" />
+			<exclude module="sif4j-log4j" />
+			<exclude module="sif4j-log4j12" />
+			<exclude module="sif4j-simple" />
+			<exclude module="cglib-nodep" />
+    </dependencies>
 
   val root = Project(appName, file("."))
     .enablePlugins(play.PlayScala)
     .settings(scalacOptions ++= scalaBuildOptions)
     .settings(
       version := appVersion,
-      libraryDependencies ++= appDependencies)
+      libraryDependencies ++= appDependencies,
+      ivyXML := exclusions //  
+    )
 
   println("Done")
 

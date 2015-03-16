@@ -6,7 +6,8 @@ import me.lightspeed7.dsug.{ Actors, Constants }
 import scala.util.Random
 import me.lightspeed7.dsug.ImpressionLog
 import kafka.producer.KeyedMessage
-import me.lightspeed7.dsug.Producers
+import me.lightspeed7.dsug.Kafka
+import play.api.libs.json.Json
 
 class GeneratorActor(name: String) extends Actor {
 
@@ -34,7 +35,9 @@ class GeneratorActor(name: String) extends Actor {
       val bid = math.abs(random.nextDouble()) % 1
       val log = ImpressionLog(timestamp, publisher, advertiser, website, geo, bid, cookie)
 
-      //      Producers.producer.send(new KeyedMessage[String, ImpressionLog](Constants.KafkaTopic, log))
+      val payload: String = ImpressionLog.toJson(log).toString()
+      // println(s"Payload => ${payload}")
+      Kafka.producer.send(new KeyedMessage[String, String](Constants.KafkaTopic, payload))
 
       i = i + 1
       if (i % 100 == 0) {

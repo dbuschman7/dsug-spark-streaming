@@ -1,6 +1,7 @@
 package me.lightspeed7.dsug
 
 import scala.concurrent.duration._
+import org.apache.spark.streaming.Seconds
 
 object Constants {
 
@@ -18,12 +19,18 @@ object Constants {
   val LogGeneratorDelay = 10 milliseconds
 
   // In between
-  val KafkaServer = "127.0.0.1:9093"
+  val KafkaServer = "127.0.0.1:9092"
   val KafkaTopic = "adnetwork-topic"
+  def KafkaGroupId = "dsug-spark-streaming"
+  val ZkServer = "127.0.0.1:2181"
+  val ZkConnTimeout = "10000"
+  val ZkTimeout = 5000
 
   // Aggregation Config
-  val MongodbServerList = List("localhost")
+  val MongodbServerList = List("localhost:27017")
   val MongodbDatabase = "adlogdb"
   val MongodbCollection = "impsPerPubGeo"
+
+  val BatchDuration = Seconds(10)
 
 }
