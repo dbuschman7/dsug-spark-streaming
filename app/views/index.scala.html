@@ -1,5 +1,7 @@
 @(uuid: String) @layout(title = "Spark Streaming", appName = "spark") {
 
+<link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/epoch.min.css")">
+
 <section>
 	<div class="row" data-ng-controller="SparkController"
 		data-ng-init="startSocket('@uuid')">
@@ -22,7 +24,7 @@
 
 <script src="@routes.Assets.at("javascripts/app.js")"></script>
 <script src="@routes.Assets.at("javascripts/controllers.js")"></script>
-
+<script src="@routes.Assets.at("javascripts/epoch.min.js")"></script>
 
 }
 

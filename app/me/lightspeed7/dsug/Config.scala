@@ -3,7 +3,7 @@ package me.lightspeed7.dsug
 import scala.concurrent.duration._
 import org.apache.spark.streaming.Seconds
 
-object Constants {
+object Config {
 
   // Generator Config
   val NumPublishers = 5
@@ -31,6 +31,7 @@ object Constants {
   val MongodbDatabase = "adlogdb"
   val MongodbCollection = "impsPerPubGeo"
 
-  val BatchDuration = Seconds(10)
+  val BatchDurationMongoDB = Seconds(10)
+  val StreamWindowDuration = Seconds(1)
 
 }

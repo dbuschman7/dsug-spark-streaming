@@ -15,7 +15,7 @@ import play.api.libs.json.{ JsValue, Json }
 import play.api.mvc.{ Action, BodyParsers, Controller, MultipartFormData, ResponseHeader, Result }
 import play.libs.Akka
 import java.util.UUID
-import me.lightspeed7.dsug.ui.Ui.Listener
+import me.lightspeed7.dsug.ui.Listener
 
 object Application extends Controller {
 

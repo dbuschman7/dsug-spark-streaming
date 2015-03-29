@@ -9,9 +9,10 @@ import play.api.libs.json.{ JsValue, Json }
 import play.api.libs.concurrent.Akka
 import scala.collection.JavaConversions.asScalaIterator
 import me.lightspeed7.dsug.Payload
-import me.lightspeed7.dsug.Actors
+import me.lightspeed7.dsug.Count
+import me.lightspeed7.dsug.Batch
 
-object Ui {
+object `package` {
 
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
@@ -70,4 +71,41 @@ object Ui {
     }
   }
 
+  //
+  // Statistics Actor
+  // /////////////////////////////////////
+  class StatisticsActor(name: String) extends Actor {
+
+    def receive = {
+      case Batch(logs) => {
+        // first, geo impressions
+        val geoImpsCounts: List[Count] = logs.groupBy(_.geo).map { c =>
+          val key = c._1
+          val value = c._2.foldLeft(0)((sum, ar) => sum + ar.imps)
+          Count(key, value)
+        }.toList
+        EventBus.publish(MessageEvent("payload", Payload(Json.toJson(geoImpsCounts), "geoImpsCounts")))
+
+        // second, average bids
+        val geoAvgBidsCounts: List[Count] = logs.groupBy(_.geo).map { c =>
+          val key = c._1
+          val value = (c._2.foldLeft(0.0)((sum, ar) => sum + ar.avgBids) * 100 / logs.size).toInt
+          Count(key, value)
+        }.toList
+
+        EventBus.publish(MessageEvent("payload", Payload(Json.toJson(geoAvgBidsCounts), "geoAvgBids")))
+      }
+    }
+
+    override def preStart() {
+      super.preStart()
+      println(s"StatisticsActor Ready - ${name}, path - ${self.path}")
+
+    }
+
+    override def postStop() {
+      super.postStop()
+      println(s"StatisticsActor ShutDown - ${name}, path - ${self.path}")
+    }
+  }
 }
