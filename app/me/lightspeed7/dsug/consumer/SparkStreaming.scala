@@ -2,11 +2,10 @@ package me.lightspeed7.dsug.consumer
 
 import org.apache.spark.streaming.Duration
 import org.apache.spark.streaming.dstream.DStream
-import me.lightspeed7.dsug.PublisherGeoKey
-import me.lightspeed7.dsug.AggregationLog
 import org.apache.spark.rdd.RDD
-import me.lightspeed7.dsug.AggregationResult
 import org.joda.time.DateTime
+import me.lightspeed7.dsug._
+import play.api.Logger
 
 //
 // trait to support common logic on spark streaming tasks
@@ -60,7 +59,8 @@ class StreamToMongoDB(window: Duration) extends SparkStreaming {
           count += 1
           keyStr = key.geo
         }
-        println(s"Collecting RDD logs[MongoDB] , key = ${keyStr}, size = ${count}")
+        Logger.debug(s"Collecting RDD logs[MongoDB] , key = ${keyStr}, size = ${count}")
+        Actors.statistics ! Counts("mongoCount", count)
         ConnectionPool.release(coll) // return to the pool for future reuse
       })
     })
@@ -81,7 +81,7 @@ class StreamToUI extends SparkStreaming {
           AggregationResult(new DateTime(timestamp), pub, geo, imps, uniquesHll.estimatedSize.toInt, sumBids / imps)
       }.collect()
 
-      println(s"Collecting RDD logs[UI     ] ,size = ${logs.size}")
+      Logger.debug(s"Collecting RDD logs[UI     ] ,size = ${logs.size}")
       Actors.statistics ! Batch(logs)
     })
   }

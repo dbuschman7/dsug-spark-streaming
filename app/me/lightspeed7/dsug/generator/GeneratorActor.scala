@@ -6,6 +6,7 @@ import me.lightspeed7.dsug._
 import play.api.libs.json.Json
 import scala.concurrent.duration._
 import scala.util.Random
+import play.api.Logger
 
 class GeneratorActor(name: String) extends Actor {
 
@@ -39,14 +40,15 @@ class GeneratorActor(name: String) extends Actor {
 
       i = i + 1
       if (i % 100 == 0) {
-        println(s"Sent $i messages!")
+        Logger.debug(s"Sent $i messages!")
+        Actors.statistics ! Counts("rawCount", 100)
       }
     }
   }
 
   override def preStart() {
     super.preStart()
-    println("GeneratorActor Ready")
+    Logger.info("GeneratorActor Ready")
   }
 
   override def postStop() {
@@ -54,6 +56,6 @@ class GeneratorActor(name: String) extends Actor {
       cancellable.cancel
     }
     super.postStop()
-    println("GeneratorActor")
+    Logger.info("GeneratorActor")
   }
 }

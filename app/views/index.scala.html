@@ -3,18 +3,36 @@
 <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/epoch.min.css")">
 
 <section>
-	<div class="row" data-ng-controller="SparkController"
-		data-ng-init="startSocket('@uuid')">
-		<div
-			class="col-xs-12 col-sm-10 col-sm-offset-1 col-md-offset-1 col-lg-offset-1">
-			<div>
+	<div class="row" data-ng-controller="SparkController" data-ng-init="startSocket('@uuid')">
+		<div class="col-xs-12 col-sm-10 col-sm-offset-1 col-md-offset-1 col-lg-offset-1">
 				<h3>Spark Streaming</h3>
+			<div class="col-sm-10 border " >
+				<table width="100%" >
+					<tr ><td colspan="10"><h3>Counts By Geo</h3></td></tr>
+					<tr class="panel-header panel-warning" >
+						<td class="col-sm-3 text-center"><h3>CO</h3><div id="geoCoChart" class="epoch gauge-tiny"></div></td>
+						<td class="col-sm-3 text-center"><h3>CA</h3><div id="geoCaChart" class="epoch gauge-tiny"></div></td>
+						<td class="col-sm-3 text-center"><h3>FL</h3><div id="geoFlChart" class="epoch gauge-tiny"></div></td>
+						<td class="col-sm-3 text-center"><h3>HI</h3><div id="geoHiChart" class="epoch gauge-tiny"></div></td>
+						<td class="col-sm-3 text-center"><h3>NY</h3><div id="geoNyChart" class="epoch gauge-tiny"></div></td>
+					</tr>
+					<tr ><td colspan="10"><hr/></td></tr>
+					<tr ><td colspan="10"><h3>Count By Average Bid</h3></td></tr>
+					<tr >
+						<td colspan="10" ><div id="areaChart" class="panel-header panel-warning" style="width: 100%; height: 200px"></div></td>
+					</tr>
+					<tr ><td colspan="10">&nbsp;</td></tr>
+				</table>
+				
 			</div>
-
-			<div class="border container fill">
-				<div class="panel-body" id="file">
-					Text goes here						
-				</div>
+			<div class="col-sm-2 border container " >
+				<h3>Logs</h3>
+				<strong>Raw Logs</strong>
+				<p class="text-right padded" >{{rawCount | number : 0 }}</p>
+				<strong>By Pub and Geo</strong><br/>
+				<p class="text-right padded" >{{pubGeoCount | number : 0 }}</p>
+				<strong>MongoDB</strong><br/>
+				<p class="text-right padded" >{{mongoCount | number : 0 }}</p>
 			</div>
 		</div>
 	</div>
@@ -22,9 +40,92 @@
 	</div>
 </section>
 
-<script src="@routes.Assets.at("javascripts/app.js")"></script>
-<script src="@routes.Assets.at("javascripts/controllers.js")"></script>
+<script src="@routes.WebJarAssets.at(WebJarAssets.locate("d3.min.js"))"></script>
 <script src="@routes.Assets.at("javascripts/epoch.min.js")"></script>
+<script>
+
+	// guages
+	// ////////////////////////
+	var domain = [0,40];
+	var curTicks = 10;
+	var curFps = 20;
+	function curFormat(v) { return (v).toFixed(0) + ''; };
+	
+	var coGeo = $('#geoCoChart').epoch({ type : 'time.gauge', domain : domain,
+		ticks : curTicks, tickSize : curTicks, tickOffset : curTicks,
+		fps : curFps, format : curFormat, value : 0
+	});
+
+	var caGeo = $('#geoCaChart').epoch({ type : 'time.gauge', domain : domain,
+		ticks : curTicks, tickSize : curTicks, tickOffset : curTicks,
+		fps : curFps, format : curFormat, value : 0
+	});
+
+	var flGeo = $('#geoFlChart').epoch({ type : 'time.gauge', domain : domain,
+		ticks : curTicks, tickSize : curTicks, tickOffset : curTicks,
+		fps : curFps, format : curFormat, value : 0
+	});
+	
+	var hiGeo = $('#geoHiChart').epoch({ type : 'time.gauge', domain : domain,
+		ticks : curTicks, tickSize : curTicks, tickOffset : curTicks,
+		fps : curFps, format : curFormat, value : 0
+	});
+
+	var nyGeo = $('#geoNyChart').epoch({ type : 'time.gauge', domain : domain,
+		ticks : curTicks, tickSize : curTicks, tickOffset : curTicks,
+		fps : curFps, format : curFormat, value : 0
+	});
+	
+	function updateGeoChart(key, count) {
+		if ( count > 40 ) { 
+			return
+		}
+		
+		if (key == 'CO') { coGeo.update(count); }
+		if (key == 'CA') { caGeo.update(count); }
+		if (key == 'FL') { flGeo.update(count); }
+		if (key == 'HI') { hiGeo.update(count); }
+		if (key == 'NY') { nyGeo.update(count); }
+	}
+
+	// area chart
+	// //////////////////////
+	var areaChartData = [];
+	areaChartData.push(	{ label: "CO", values: [{ time: 1, y: 0 }] });
+	areaChartData.push(	{ label: "CA", values: [{ time: 1, y: 0 }] });
+	areaChartData.push(	{ label: "FL", values: [{ time: 1, y: 0 }] });
+	areaChartData.push(	{ label: "HI", values: [{ time: 1, y: 0 }] });
+	areaChartData.push(	{ label: "NY", values: [{ time: 1, y: 0 }] });
+
+	
+	var area = $('#areaChart').epoch({
+	    type: 'time.line',
+	    data: areaChartData,
+	    windowSize : 30,
+	    historySize: 60,
+	    axes: ['left', 'bottom', 'right']
+	});
+
+	
+	function updateAreaChart(ts, counts) {
+		for (var i = 0; i < counts.length; i++) {
+			if ( counts[i] > 40 ) { return }
+		}
+//		console.log("area - ts = " + ts + "  counts = " + counts + " values.length " + areaChartData[0].values.length)
+		var data = [];
+		data.push({ time: ts, y: counts[0] });
+		data.push({ time: ts, y: counts[1] }); 
+		data.push({ time: ts, y: counts[2] }); 
+		data.push({ time: ts, y: counts[3] });
+		data.push({ time: ts, y: counts[4] });
+		area.push(data);
+	}
+
+	
+</script>
+
+<script src="@routes.Assets.at("app.js")"></script>
+<script src="@routes.Assets.at("controllers.js")"></script>
 
 }
 

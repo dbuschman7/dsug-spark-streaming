@@ -53,6 +53,7 @@ object ApplicationBuild extends Build {
     "org.webjars" % "angularjs" % "1.2.23",
     "org.webjars" % "bootstrap" % "3.2.0",
     "org.webjars" % "angular-ui-bootstrap" % "0.12.0",
+    "org.webjars" % "d3js" % "3.5.3",
 
     // Spark and Spark Streaming
     "org.apache.spark" %% "spark-core" % sparkVersion,

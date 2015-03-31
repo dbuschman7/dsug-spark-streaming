@@ -27,17 +27,17 @@ object Application extends Controller {
   def sse(uuid: String) = Action.async { req =>
 
     Future {
-      println(req.remoteAddress + " - SSE connected")
+      Logger.info(req.remoteAddress + " - SSE connected")
       val (out, channel) = Concurrent.broadcast[JsValue]
 
       // create unique actor for each uuid
-      println(s"Creating Listener - ${uuid}")
+      Logger.info(s"Creating Listener - ${uuid}")
       val listener = Akka.system.actorOf(Props(classOf[Listener], uuid, channel))
 
       def connDeathWatch(addr: String): Enumeratee[JsValue, JsValue] =
         Enumeratee.onIterateeDone { () =>
           {
-            println(addr + " - SSE disconnected")
+            Logger.info(addr + " - SSE disconnected")
             listener ! PoisonPill
           }
         }

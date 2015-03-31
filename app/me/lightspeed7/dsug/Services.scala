@@ -3,6 +3,7 @@ package me.lightspeed7.dsug
 import me.lightspeed7.dsug.ui.StatisticsActor
 import me.lightspeed7.dsug.consumer.KafkaConsumer
 import org.apache.spark.streaming.StreamingContext
+import play.api.Logger
 
 object Actors {
   import play.libs.Akka
@@ -18,7 +19,7 @@ object Actors {
   def start = {
     generator
     // more here
-    println("Actors - Generator started")
+    Logger.info("Actors - Generator started")
   }
 
   def stop = system.shutdown()
@@ -45,7 +46,7 @@ object Kafka {
     props.put("batch.num.messages", "25")
 
     val producer = new Producer[String, String](new ProducerConfig(props))
-    println(s"Kafka producer started")
+    Logger.info(s"Kafka producer started")
     producer
   }
 
@@ -129,7 +130,7 @@ object MongoDB {
     val dbName = db.name
     val collName = Config.MongodbCollection
     val stats = Await.result(getCollection(Config.MongodbCollection).stats(), 5 seconds)
-    println(s"MongoDB - db = ${dbName}, collection name = ${collName}, size = ${stats.count}")
+    Logger.info(s"MongoDB - db = ${dbName}, collection name = ${collName}, size = ${stats.count}")
   }
 
   // MAKE SURE THIS IS LAZY

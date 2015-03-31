@@ -31,7 +31,7 @@ case class AggregationResult(date: DateTime, publisher: String, geo: String, imp
 
 // to send to the statistics actor
 case class Batch(logs: Array[AggregationResult])
-
+case class Counts(key: String, value: Long)
 //
 // Payload object sent to Angular
 // //////////////////////////////
@@ -43,5 +43,9 @@ object Payload {
 case class Count(key: String, count: Int)
 object Count {
   implicit val countFormat = Json.format[Count]
+}
 
+case class TimeSeriesCount(ts: Long, data: List[Count])
+object TimeSeriesCount {
+  implicit val timeSeriesFormat = Json.format[TimeSeriesCount]
 }
