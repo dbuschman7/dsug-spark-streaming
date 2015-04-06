@@ -7,15 +7,6 @@ import org.joda.time.DateTime
 import me.lightspeed7.dsug._
 import play.api.Logger
 
-//
-// trait to support common logic on spark streaming tasks
-// //////////////////////////////////////////////////////////
-trait SparkStreaming extends Serializable {
-
-  def aggregateWindowStream(stream: DStream[(PublisherGeoKey, AggregationLog)]): Unit
-
-}
-
 object SparkStreaming {
 
   // ////////////////////////////////////////
@@ -32,25 +23,36 @@ object SparkStreaming {
   }
 }
 
-class StreamToMongoDB(window: Duration) extends SparkStreaming {
-  import me.lightspeed7.dsug.MongoDB
+class StreamToUI {
+  import me.lightspeed7.dsug._
 
   def aggregateWindowStream(stream: DStream[(PublisherGeoKey, AggregationLog)]): Unit = {
+    // already aggregated to 1 second windows
+    stream.foreachRDD({ logRdd: RDD[(PublisherGeoKey, AggregationLog)] =>
+      val logs = logRdd.map {
+        case (PublisherGeoKey(pub, geo), AggregationLog(timestamp, sumBids, imps, uniquesHll)) =>
+          AggregationResult(new DateTime(timestamp), pub, geo, imps, uniquesHll.estimatedSize.toInt, sumBids / imps)
+      }.collect() // output operation
 
+      Logger.debug(s"Collecting RDD logs[UI     ] ,size = ${logs.size}")
+      Actors.statistics ! Batch(logs)
+    })
+  }
+}
+
+class StreamToMongoDB(window: Duration) {
+  import me.lightspeed7.dsug.MongoDB
+  import me.lightspeed7.dsug.MongoDB._
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  def aggregateWindowStream(stream: DStream[(PublisherGeoKey, AggregationLog)]): Unit = {
     val aggLogs = stream.reduceByKeyAndWindow(SparkStreaming.reduceAggregationLogs _, window, window)
-
     aggLogs.foreachRDD(rdd => {
       rdd.foreachPartition(logs => {
-
-        import scala.concurrent.ExecutionContext.Implicits.global
-
-        // ConnectionPool is a static, lazily initialized pool of connections
-        val coll = ConnectionPool.checkout
+        val coll = ConnectionPool.checkout //static, lazily initialized pool of connections
         var count = 0
         var keyStr: String = ""
         logs.foreach { record =>
-          import me.lightspeed7.dsug.MongoDB._
-
           val key = record._1
           val log = record._2
           val result = AggregationResult(new DateTime(log.timestamp), key.publisher, key.geo, //
@@ -67,22 +69,27 @@ class StreamToMongoDB(window: Duration) extends SparkStreaming {
   }
 }
 
-class StreamToUI extends SparkStreaming {
-  import me.lightspeed7.dsug.Actors
-  import me.lightspeed7.dsug.Batch
+class StreamToMongoDBConnPerRDD(window: Duration) {
+  import me.lightspeed7.dsug.MongoDB
+  import me.lightspeed7.dsug.MongoDB._
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   def aggregateWindowStream(stream: DStream[(PublisherGeoKey, AggregationLog)]): Unit = {
+    val aggLogs = stream.reduceByKeyAndWindow(SparkStreaming.reduceAggregationLogs _, window, window)
 
-    // already aggregated to 1 second windows
-
-    stream.foreachRDD({ logRdd: RDD[(PublisherGeoKey, AggregationLog)] =>
+    aggLogs.foreachRDD({ logRdd: RDD[(PublisherGeoKey, AggregationLog)] =>
       val logs = logRdd.map {
         case (PublisherGeoKey(pub, geo), AggregationLog(timestamp, sumBids, imps, uniquesHll)) =>
           AggregationResult(new DateTime(timestamp), pub, geo, imps, uniquesHll.estimatedSize.toInt, sumBids / imps)
-      }.collect()
+      }.collect() // output operation
 
-      Logger.debug(s"Collecting RDD logs[UI     ] ,size = ${logs.size}")
-      Actors.statistics ! Batch(logs)
+      // more oo like
+      val coll = ConnectionPool.checkout
+      logs.foreach { log => coll.save(log) }
+      ConnectionPool.release(coll)
+
+      // functional like
+      ConnectionPool.release(logs.foldLeft(ConnectionPool.checkout) { (coll, log) => { coll.save(log); coll } })
     })
   }
 }

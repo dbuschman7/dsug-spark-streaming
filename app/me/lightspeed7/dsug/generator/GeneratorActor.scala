@@ -35,7 +35,6 @@ class GeneratorActor(name: String) extends Actor {
       val log = ImpressionLog(timestamp, publisher, advertiser, website, geo, bid, cookie)
 
       val payload: String = ImpressionLog.toJson(log).toString()
-      // println(s"Payload => ${payload}")
       Kafka.producer.send(new KeyedMessage[String, String](Config.KafkaTopic, payload))
 
       i = i + 1

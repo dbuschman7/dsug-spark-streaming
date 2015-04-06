@@ -9,10 +9,10 @@ object Global extends GlobalSettings {
 
   override def onStart(app: Application) {
     Kafka.createTopic(Config.KafkaTopic)
-    Actors.start
-    MongoDB.start
-    Thread sleep 2000
-    Kafka.start
+    //    Actors.start
+    //    MongoDB.start
+    //    Thread sleep 2000
+    //    Kafka.start
   }
 
   override def onStop(app: Application) {

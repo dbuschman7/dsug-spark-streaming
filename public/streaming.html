@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+<meta charset="utf-8">
+
+<title>Reactive</title>
+
+<meta name="description" content="Introduction to Spark Streaming">
+<meta name="author" content="David Buschman">
+
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+<link rel="stylesheet" href="/assets/reveal3/css/reveal.css">
+<link rel="stylesheet" href="/assets/reveal3/css/theme/moon.css" id="theme">
+
+<!-- Code syntax highlighting -->
+<link rel="stylesheet" href="/assets/reveal3/lib/css/zenburn.css">
+
+<!-- Printing and PDF exports -->
+<script>
+	var link = document.createElement('link');
+	link.rel = 'stylesheet';
+	link.type = 'text/css';
+	link.href = window.location.search.match(/print-pdf/gi) ? '/assets/reveal3/css/print/pdf.css'
+			: '/assets/reveal3/css/print/paper.css';
+	document.getElementsByTagName('head')[0].appendChild(link);
+</script>
+
+<!--[if lt IE 9]>
+		<script src="/assets/reveal3/lib/js/html5shiv.js"></script>
+		<![endif]-->
+</head>
+
+<body>
+
+	<div class="reveal">
+
+
+		<!-- Any section element inside of this container is displayed as a slide -->
+		<div class="slides">
+			<section>
+				<h3>&nbsp;</h3>
+				<h2>Introduction to Spark Streaming</h2>
+				<p>&nbsp;</p>
+				<h3>Denver Scala User Group</h3>
+				<p>David Buschman</p>
+				<p>April 7th, 2015</p>
+				<p>Github - dbuschman7</p>
+				<p>&nbsp;</p>
+				<p>https://github.com/dbuschman7/dsug-spark-streaming</p>
+			</section>
+
+			<section id="fragments">
+				<h2>Presentation Outline</h2>
+				<p>&nbsp;</p>
+				<ul>
+					<li class="fragment ">What is Spark?</li>
+					<li class="fragment ">What is Spark Streaming?</li>
+					<li class="fragment ">Spark Streaming versus Storm</li>
+					<li class="fragment ">Messaging Semantics</li>
+					<li class="fragment ">Beyond Spark 1.3</li>
+					<li class="fragment ">Example Application</li>
+					<li class="fragment ">Demo Time!</li>
+				</ul>
+			</section>
+
+			<!-- *********************************** -->
+			<!-- **** Summary and Motivation    **** -->
+			<!-- *********************************** -->
+			<section>
+				<section>
+					<h2>What is Spark?</h2>
+					<p class="fragment">Apache Spark is a fast and general-purpose cluster computing system.</p>
+					<img class="fragment" src="/assets/images/spark-topology.png" alt="breaker">
+				</section>
+				<section>
+					<h2>Resilient Distributed Dataset (RDD)</h2>
+					<ul>
+						<li class="fragment">Spark’s primary abstraction</li>
+						<li class="fragment">Distributed collection of items</li>
+						<li class="fragment">created from any storage source supported by Hadoop</li>
+						<li class="fragment">including local file system, HDFS,</li>
+						<li class="fragment">Cassandra, HBase, Amazon S3, etc.</li>
+						<li class="fragment">or by transforming other RDDs (secret sauce)</li>
+						<li class="fragment">Executed lazily, output operations cause execution</li>
+					</ul>
+				</section>
+				<section>
+					<h2>Spark Architecture</h2>
+					<img class="fragment" src="/assets/images/Spark-2015-Vision.jpg" alt="breaker">
+				</section>
+			</section>
+			<section>
+				<section>
+					<h2>Spark Streaming - DStreams</h2>
+					<ul>
+						<li class="fragment ">Scalable, Fault Tolerant stream processing</li>
+						<li class="fragment ">Micro-Batches and not per-event streaming ( Storm )</li>
+						<li class="fragment ">Data provided in specified duration intervals</li>
+					</ul>
+					<img class="fragment" style="background-color: #FFF;" src="/assets/images/streaming-dstream-ops.png" alt="breaker">
+				</section>
+				<section>
+					<h2>Spark Streaming - Diagram</h2>
+					<img class="fragment" style="background-color: #FFF;" src="/assets/images/spark-streaming.png" alt="breaker">
+					<ul>
+						<li class="fragment ">Scalable, Fault Tolerant stream processing</li>
+						<li class="fragment ">High Level API - joins, windows, 5x less code</li>
+						<li class="fragment ">Fault Tolerant - exactly once semantics (*)</li>
+						<li class="fragment ">Integration - SQL, DataFrames, MLib, GraphX</li>
+					</ul>
+				</section>
+				<section>
+					<h2>Spark Streaming - Windowing</h2>
+					<img class="fragment" style="background-color: #FFF;" src="/assets/images/streaming-dstream-window.png" alt="breaker">
+					<ul>
+						<li class="fragment ">Window Operations are configurable</li>
+						<li class="fragment ">windowDuration - length on the window</li>
+						<li class="fragment ">slideDuration - amount to slide the window for each pass</li>
+						<li class="fragment">Durations be less then DStream duration interval</li>
+					</ul>
+				</section>
+				<section>
+					<h2>Spark Streaming - Message Semantics</h2>
+					<ul>
+						<li class="fragment "><strong>At-Most Once</strong> - where each message is delivered once or never</li>
+						<li class="fragment "><strong>At-least Once</strong> - where each message is certain to be delivered, but may do so
+							multiple times</li>
+						<li class="fragment "><strong>Exactly Once</strong> - where the message will always certainly arrive and do so only
+							once</li>
+						<li class="fragment">It depends on your data-source, check there</li>
+						<li class="fragment">Its a very important decision for any messaging driven system</li>
+					</ul>
+				</section>
+			</section>
+
+
+			<!-- *********************************** -->
+			<!-- **** Lookup and stream a file  **** -->
+			<!-- *********************************** -->
+			<section>
+				<section>
+					<h2>Demo Time - Dependencies</h2>
+					<ul>
+						<li>Log Aggregation Example base code</li>
+						<li>Authors - Frederic Dang Ngoc and Francois Dang Ngoc</li>
+						<li><a href="http://chimpler.wordpress.com/2014/07/01/implementing-a-real-time-data-pipeline-with-spark-streaming/">http://chimpler.wordpress.com/2014/07/01/implementing-a-real-time-data-pipeline-with-spark-streaming/</a></li>
+						<li>Kafka 0.8.2.0</li>
+						<li>MongoDB 2.6.1 - ReactiveMongo - 0.10.5.0.akka23</li>
+						<li>Play 2.3.7 - PlayJson, Akka</li>
+						<li>Scala 2.10.x</li>
+						<li>AngularJS - 1.2.23</li>
+						<li>Bootstrap - 3.2.0</li>
+					</ul>
+				</section>
+				<section>
+					<h2>Demo Time - Application Diagram</h2>
+					<img style="background-color: #FFF;" src="/assets/images/app-diagram.png" alt="breaker">
+				</section>
+				<section>
+					<h2>Demo Time - Log Generator</h2>
+					<span class="stretch"> <pre>
+							<code class=" scala">val NumPublishers = 5
+val NumAdvertisers = 3
+val Publishers = (0 to NumPublishers).map("publisher_" +)
+val Advertisers = (0 to NumAdvertisers).map("advertiser_" +)
+val UnknownGeo = "unknown"
+val Geos = Seq("NY", "CA", "FL", "CO", "HI", UnknownGeo)
+val NumWebsites = 10000
+val NumCookies = 10000
+val LogGeneratorDelay = 10 milliseconds
+							
+def receive = {
+  case Tick => {
+   ...
+    val log = ImpressionLog(timestamp, publisher, advertiser, website, geo, bid, cookie)
+    val payload: String = ImpressionLog.toJson(log).toString()
+    Kafka.producer.send(new KeyedMessage[String, String](Config.KafkaTopic, payload))
+  }
+}</code>
+						</pre></span>
+				</section>
+				<section>
+					<h2>Demo Time - Start the Stream</h2>
+					<span class="stretch"> <pre>
+							<code class=" scala">lazy val streamingContext = new StreamingContext(sparkContext, Seconds(1))
+
+lazy val messages = KafkaUtils.createStream[String, String, StringDecoder, StringDecoder]
+	 (streamingContext, zkParams, topic, StorageLevel.MEMORY_AND_DISK)
+
+lazy val hyperLogLog = new HyperLogLogMonoid(12) // to count uniques
+
+lazy val windowStream = messages //
+  .map(raw => ImpressionLog.fromJson(raw._2)).filter(_.geo != Config.UnknownGeo) //
+  .map { log =>
+    val key = PublisherGeoKey(log.publisher, log.geo)
+    val agg = AggregationLog(log.timestamp, log.bid, 1, 
+                  hyperLogLog(log.cookie.getBytes(Charsets.UTF_8)))
+    (key, agg)
+  }
+</code>
+						</pre></span>
+				</section>
+				<section>
+					<h2>Demo Time - Aggregation</h2>
+					<span class="stretch"><pre>
+							<code class=" scala">def reduceAggregationLogs(aggLog1: AggregationLog, aggLog2: AggregationLog) = {
+  aggLog1.copy(
+    timestamp = math.min(aggLog1.timestamp, aggLog2.timestamp),
+    sumBids = aggLog1.sumBids + aggLog2.sumBids,
+    imps = aggLog1.imps + aggLog2.imps,
+    uniquesHll = aggLog1.uniquesHll + aggLog2.uniquesHll)
+}
+
+lazy val byWindowAggreation = windowStream
+    .reduceByKeyAndWindow(reduceAggregationLogs, Seconds(1))
+
+uiStream.aggregateWindowStream(byWindowAggreation)
+mongoDbStream.aggregateWindowStream(byWindowAggreation)
+
+</code>
+						</pre></span>
+				</section>
+				<section>
+					<h2>Demo Time - Streaming UI</h2>
+					<span class="stretch"> <pre>
+							<code class=" scala">class StreamToUI {
+  def aggregateWindowStream(stream: DStream[(PublisherGeoKey, AggregationLog)]): Unit = {
+    // already aggregated to 1 second windows
+    stream.foreachRDD({ logRdd: RDD[(PublisherGeoKey, AggregationLog)] =>
+      val logs = logRdd.map {
+        case (PublisherGeoKey(pub, geo), AggregationLog(timestamp, sumBids, imps, uniquesHll)) =>
+          AggregationResult(new DateTime(timestamp), pub, geo, imps, 
+                 uniquesHll.estimatedSize.toInt, sumBids / imps)
+      }.collect() // output operation
+
+      Actors.statistics ! Batch(logs)
+    })
+  }
+}
+</code>
+						</pre></span>
+				</section>
+				<section>
+					<h2>Demo Time - Persistence</h2>
+					<span class="stretch"> <pre>
+							<code class=" scala">stream.foreachRDD({ logRdd: RDD[(PublisherGeoKey, AggregationLog)] =>
+  val logs = logRdd.map {
+    case (PublisherGeoKey(pub, geo), AggregationLog(timestamp, sumBids, imps, uniquesHll)) =>
+      AggregationResult(new DateTime(timestamp), pub, geo, imps, uniquesHll.estimatedSize.toInt, sumBids / imps)
+  }.collect() // output operation
+
+  val coll = ConnectionPool.checkout 
+  logs.foreach { log => coll.save(log) }
+  ConnectionPool.release(coll)
+
+  ConnectionPool.release(logs.foldLeft(ConnectionPool.checkout) {
+    (coll, log) => { coll.save(log); coll }
+  })
+})
+</code>
+						</pre></span>
+				</section>
+				<section>
+					<h2>Demo Time - Streaming MongoDB</h2>
+					<span class="stretch"> <pre>
+							<code class=" scala">class StreamToMongoDB(window: Duration) {
+  def aggregateWindowStream(stream: DStream[(PublisherGeoKey, AggregationLog)]): Unit = {
+    val aggLogs = stream.reduceByKeyAndWindow(SparkStreaming.reduceAggregationLogs _, window, window)
+    aggLogs.foreachRDD(rdd => {
+      rdd.foreachPartition(logs => {
+        val coll = ConnectionPool.checkout //static, lazily initialized pool of connections
+        logs.foreach { record =>
+          val key = record._1
+          val log = record._2
+          val result = AggregationResult(new DateTime(log.timestamp), key.publisher, key.geo, //
+            log.imps, log.uniquesHll.estimatedSize.toInt, log.sumBids / log.imps)
+          coll.save(result)
+        }
+        Actors.statistics ! Counts("mongoCount", count)
+        ConnectionPool.release(coll) // return to the pool for future reuse
+      })
+    })
+  }
+}</code>
+						</pre></span>
+				</section>
+
+				<section>
+					<h2>Demo Time - Ready, Set, Go!</h2>
+					<span class="stretch"> <pre>
+							<code class=" scala">streamingContext.start()
+</code>
+						</pre></span>
+					<ul>
+						<li>You must call this to start eveything</li>
+						<li class="fragment">Do NOT forget to call this method!</li>
+						<li class="fragment">Nothing will flow in until called</li>
+						<li class="fragment">The stream topology is immutable once called</li>
+						<li class="fragment">You can only have 1 Spark/Streaming context per JVM</li>
+					</ul>
+				</section>
+			</section>
+		</div>
+	</div>
+
+	<script src="/assets/reveal3/lib/js/head.min.js"></script>
+	<script src="/assets/reveal3/js/reveal.js"></script>
+
+	<script>
+		// Full list of configuration options available at:
+		// https://github.com/hakimel/reveal.js#configuration
+		Reveal.initialize({
+			controls : true,
+			progress : true,
+			history : true,
+			center : true,
+
+			transition : 'slide', // none/fade/slide/convex/concave/zoom
+
+			// Optional reveal.js plugins
+			dependencies : [ {
+				src : '/assets/reveal3/lib/js/classList.js',
+				condition : function() {
+					return !document.body.classList;
+				}
+			}, {
+				src : '/assets/reveal3/plugin/markdown/marked.js',
+				condition : function() {
+					return !!document.querySelector('[data-markdown]');
+				}
+			}, {
+				src : '/assets/reveal3/plugin/markdown/markdown.js',
+				condition : function() {
+					return !!document.querySelector('[data-markdown]');
+				}
+			}, {
+				src : '/assets/reveal3/plugin/highlight/highlight.js',
+				async : true,
+				condition : function() {
+					return !!document.querySelector('pre code');
+				},
+				callback : function() {
+					hljs.initHighlightingOnLoad();
+				}
+			}, {
+				src : '/assets/reveal3/plugin/zoom-js/zoom.js',
+				async : true
+			}, {
+				src : '/assets/reveal3/plugin/notes/notes.js',
+				async : true
+			} ]
+		});
+	</script>
+
+</body>
+</html>
