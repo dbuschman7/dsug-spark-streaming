@@ -49,7 +49,7 @@ class StreamToMongoDB(window: Duration) {
     val aggLogs = stream.reduceByKeyAndWindow(SparkStreaming.reduceAggregationLogs _, window, window)
     aggLogs.foreachRDD(rdd => {
       rdd.foreachPartition(logs => {
-        val coll = ConnectionPool.checkout //static, lazily initialized pool of connections
+        lazy val coll = ConnectionPool.checkout //static, lazily initialized pool of connections
         var count = 0
         var keyStr: String = ""
         logs.foreach { record =>
@@ -77,7 +77,7 @@ class StreamToMongoDBConnPerRDD(window: Duration) {
   def aggregateWindowStream(stream: DStream[(PublisherGeoKey, AggregationLog)]): Unit = {
     val aggLogs = stream.reduceByKeyAndWindow(SparkStreaming.reduceAggregationLogs _, window, window)
 
-    aggLogs.foreachRDD({ logRdd: RDD[(PublisherGeoKey, AggregationLog)] =>
+    aggLogs.foreachRDD { logRdd: RDD[(PublisherGeoKey, AggregationLog)] =>
       val logs = logRdd.map {
         case (PublisherGeoKey(pub, geo), AggregationLog(timestamp, sumBids, imps, uniquesHll)) =>
           AggregationResult(new DateTime(timestamp), pub, geo, imps, uniquesHll.estimatedSize.toInt, sumBids / imps)
@@ -89,7 +89,9 @@ class StreamToMongoDBConnPerRDD(window: Duration) {
       ConnectionPool.release(coll)
 
       // functional like
-      ConnectionPool.release(logs.foldLeft(ConnectionPool.checkout) { (coll, log) => { coll.save(log); coll } })
-    })
+      ConnectionPool.release(logs.foldLeft(ConnectionPool.checkout) {
+        (coll, log) => { coll.save(log); coll }
+      })
+    }
   }
 }

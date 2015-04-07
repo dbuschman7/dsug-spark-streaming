@@ -82,10 +82,10 @@ object ApplicationBuild extends Build {
 			<exclude org="javax.jms" module="jms" />
 			<exclude org="com.sun.jdmk" module="jmxtools" />
 			<exclude org="com.sun.jmx" module="jmxri" />
-			<exclude module="sif4j-jdk14" />
-			<exclude module="sif4j-log4j" />
-			<exclude module="sif4j-log4j12" />
-			<exclude module="sif4j-simple" />
+			<exclude module="slf4j-jdk14" />
+			<exclude module="slf4j-log4j" />
+			<exclude module="slf4j-log4j12" />
+			<exclude module="slf4j-simple" />
 			<exclude module="cglib-nodep" />
     </dependencies>
 

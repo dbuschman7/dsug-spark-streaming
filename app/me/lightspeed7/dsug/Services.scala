@@ -44,6 +44,7 @@ object Kafka {
     props.put("serializer.class", "kafka.serializer.StringEncoder")
     props.put("metadata.broker.list", Config.KafkaServer)
     props.put("batch.num.messages", "25")
+    props.put("queue.buffering.max.ms", "10")
 
     val producer = new Producer[String, String](new ProducerConfig(props))
     Logger.info(s"Kafka producer started")
